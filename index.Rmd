@@ -1,0 +1,380 @@
+---
+title: "Fitting structural mean models"
+author: "Tom Palmer"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+    code_download: true
+    code_folding: show
+    anchor_sections: true
+---
+
+```{r include=FALSE}
+require("Hmisc")
+```
+`r Hmisc::hidingTOC(levels = 4)`
+
+# Introduction
+
+This is the code from the appendix of Clarke, et al., Estimating Structural Mean Models with
+Multiple Instrumental Variables Using the Generalised Method of Moments. Statistical Science, 2015, 30, 1, 96-177. https://dx.doi.org/10.1214/14-STS503
+
+# Example data
+
+Using the data from example 2 from the `ivtools::ivglm()` helpfile.
+
+```{r}
+set.seed(9)
+n <- 1000
+psi0 <- 0.5
+psi1 <- 0.2
+Z <- rbinom(n, 1, 0.5)
+X <- rbinom(n, 1, 0.7*Z + 0.2*(1 - Z)) 
+m0 <- plogis(1 + 0.8*X - 0.39*Z)
+Y <- rbinom(n, 1, plogis(psi0*X + log(m0/(1 - m0)))) 
+dat <- data.frame(Z, X, Y)
+```
+
+# Fitting Structural Mean Models
+
+* Setup: we need the gmm and ivtools packages
+```{r setup, message=FALSE}
+library(gmm)
+library(ivtools)
+library(logbin)
+library(boot)
+library(ivreg)
+library(msm)
+```
+
+## Additive structural mean model: estimation of the causal risk difference
+
+* Formula syntax
+```{r}
+asmm <- gmm(dat[, "Y"] ~ dat[, "X"], x = dat[, c("Z")], vcov = "iid")
+
+# model summary
+summary(asmm)
+
+# estimates with 95% CIs
+cbind(coef(asmm), confint(asmm)$test)
+
+# over-identification test
+# specTest(asmm)
+```
+
+* Alternative function syntax
+```{r}
+asmmMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # moments
+  m1 <- (Y - theta[1] - theta[2]*X)
+  m2 <- (Y - theta[1] - theta[2]*X)*Z1
+  return(cbind(m1, m2))
+}
+
+asmm2 <- gmm(asmmMoments, x = dat, t0 = c(0, 0), vcov = "iid")
+
+# estimates
+summary(asmm2)
+cbind(coef(asmm2), confint(asmm2)$test)
+
+# over-identification test
+# specTest(asmm2)
+```
+
+### Comparison fits
+
+#### G-estimation
+```{r}
+fitZ.L <- glm(Z ~ 1, data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitIdentGest <-
+  ivglm(
+    estmethod = "g",
+    X = "X",
+    fitZ.L = fitZ.L,
+    fitY.LZX = fitY.LZX,
+    data = dat,
+    link = "identity",
+    Y = "Y"
+  )
+
+# model summary
+summary(fitIdentGest)
+
+# estimates and CIs
+cbind(fitIdentGest$est, confint(fitIdentGest))
+
+# plot estimating function
+estf1 <- estfun(fitIdentGest)
+plot(estf1)
+```
+
+## Multiplication structural mean model: estimation of the causal risk ratio
+
+```{r}
+msmmMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # moments
+  m1 <- (Y*exp(-1*X*theta[2]) - theta[1])
+  m2 <- (Y*exp(-1*X*theta[2]) - theta[1])*Z1
+  return(cbind(m1, m2))
+}
+
+msmm <- gmm(msmmMoments, x = dat, t0 = c(0, 0), vcov = "iid")
+
+# estimates
+summary(msmm)
+
+# causal risk ratio
+exp(cbind(coef(msmm), confint(msmm)$test)[2,])
+
+# E[Y(0)]
+cbind(coef(msmm), confint(msmm)$test)[1,]
+
+# over-identification test
+# specTest(msmm)
+```
+
+* Alternative syntax
+
+```{r}
+msmmAltMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # moments
+  m1 <- (Y*exp(-theta[1] - X*theta[2]) - 1)
+  m2 <- (Y*exp(-theta[1] - X*theta[2]) - 1)*Z1
+  return(cbind(m1, m2))
+}
+
+msmm2 <- gmm(msmmAltMoments, x = dat, t0 = c(0, 0), vcov = "iid")
+
+# exponentiate estimates
+exp(cbind(coef(msmm2), confint(msmm2)$test))
+
+# over-identification test
+# specTest(msmm2)
+```
+
+### Comparison fits
+
+#### Two-stage residual inclusion
+```{r, cache=TRUE, message=FALSE, warning=FALSE}
+stage1 <- lm(X ~ Z, data = dat)
+dat$res <- residuals(stage1)
+stage2 <- logbin(Y ~ X + res, data = dat)
+
+# model summary
+summary(stage2)
+
+# estimates and (perhaps slightly incorrect) CIs
+exp(cbind(coef(stage2), confint(stage2)))
+
+# checking CIs using bootstrap SEs
+
+stat <- function(data, indices) {
+  stage1 <- lm(X ~ Z, data = dat, subset = indices)
+  dat$res[indices] <- residuals(stage1)
+  stage2 <- logbin(Y ~ X + res, data = dat, subset = indices)
+  return(coef(stage2))
+}
+
+boot(data = dat, statistic = stat, R = 100)
+```
+
+#### G-estimation
+```{r}
+fitZ.L <- glm(Z ~ 1, data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+summary(fitY.LZX)
+
+fitLogGest <-
+  ivglm(
+    estmethod = "g",
+    X = "X",
+    fitZ.L = fitZ.L,
+    fitY.LZX = fitY.LZX,
+    data = dat,
+    link = "log",
+    Y = "Y"
+  )
+
+# model summary
+summary(fitLogGest)
+
+# estimates and CIs
+exp(cbind(fitLogGest$est, confint(fitLogGest)))
+
+# plot the estimating function
+estf <- estfun(fitLogGest)
+plot(estf)
+```
+
+#### TSLS using transformed variables
+
+* Equations 24 and 25 of Clarke et al., i.e. outcome Y(1 - X) with exposure YX
+
+```{r}
+dat$yxm1 <- dat$Y * (1 - dat$X)
+dat$yx <- dat$Y * dat$X
+dat$mz <- 1 - dat$Z
+
+# first stage
+stage1 <- glm(yx ~ Z, data = dat, family = binomial)
+summary(stage1)
+dat$hatyx <- fitted.values(stage1)
+
+# tsls fit
+tslsmsmm <- ivreg(yxm1 ~ yx | Z, data = dat)
+summary(tslsmsmm)
+
+# causal risk ratio estimate
+beta <- coef(tslsmsmm)
+-1 / beta[2]
+logcrr <- log(-1 / beta[2])
+
+# delta-method SE
+estvar <- vcov(tslsmsmm)
+logcrrse <- deltamethod(~ log(-1 / x2), beta, estvar)
+logcrrse
+
+# crr with 95% CI
+res <- unname(c(-1/beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
+res
+```
+
+## Logistic structural mean model: estimation of the causal risk ratio
+
+```{r}
+# association model
+am <- glm(Y ~ X + Z + X*Z, as.data.frame(dat), family = binomial)
+print(summary(am))
+amfit <- coef(am)
+xblog <- qlogis(fitted.values(am))
+
+# causal model with incorrect SEs
+cmMoments <- function(theta, x){
+  # extract variables from x
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # moments
+  c1 <- (plogis(xblog - theta[2]*X) - theta[1])
+  c2 <- (plogis(xblog - theta[2]*X) - theta[1])*Z1
+  return(cbind(c1, c2))
+}
+
+cm <- gmm(cmMoments, x = dat, t0 = c(0, 0), vcov = "iid")
+cmfit <- coef(cm)
+
+lsmmMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  XZ1 <- X*Z1
+  # association model moments
+  xb <- theta[1] + theta[2]*X + theta[3]*Z1 + theta[4]*XZ1
+  a1 <- (Y - plogis(xb))
+  a2 <- (Y - plogis(xb))*X
+  a3 <- (Y - plogis(xb))*Z1
+  a4 <- (Y - plogis(xb))*XZ1
+  # causal model moments
+  c1 <- (plogis(xb - theta[6]*X) - theta[5])
+  c2 <- (plogis(xb - theta[6]*X) - theta[5])*Z1
+  return(cbind(a1, a2, a3, a4, c1, c2))
+}
+
+lsmm <- gmm(lsmmMoments, x = dat, t0 = c(amfit, cmfit), vcov = "iid")
+
+# model summary
+print(summary(lsmm))
+
+# E[Y(0)]
+print(cbind(coef(lsmm), confint(lsmm)$test)[5])
+
+# exponentiate other estimates
+print(exp(cbind(coef(lsmm), confint(lsmm)$test)[-5,]))
+
+# over-identification test
+# print(specTest(lsmm))
+```
+
+### Comparison fits
+
+#### Two-stage predictor substitution
+```{r}
+fitX.LZ <- glm(X ~ Z, family = "binomial", data = dat)
+fitY.LX <- glm(Y ~ X, family = "binomial", data = dat)
+fitLogisticTSPS <-
+  ivglm(
+    estmethod = "ts",
+    fitX.LZ = fitX.LZ,
+    fitY.LX = fitY.LX,
+    data = dat,
+    ctrl = FALSE
+  )
+
+# model summary
+summary(fitLogisticTSPS)
+
+# estimates and CIs
+exp(cbind(fitLogisticTSPS$est, confint(fitLogisticTSPS)))
+```
+
+* Two-stage residual inclusion
+```{r}
+fitLogisticTSRI <-
+  ivglm(
+    estmethod = "ts",
+    fitX.LZ = fitX.LZ,
+    fitY.LX = fitY.LX,
+    data = dat,
+    ctrl = TRUE
+  )
+
+# model summary
+summary(fitLogisticTSRI)
+
+# estimates and CIs
+exp(cbind(fitLogisticTSRI$est, confint(fitLogisticTSRI)))
+```
+
+#### G-estimation
+```{r}
+fitZ.L <- glm(Z ~ 1, data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitLogisticGest <-
+  ivglm(
+    estmethod = "g",
+    X = "X",
+    fitZ.L = fitZ.L,
+    fitY.LZX = fitY.LZX,
+    data = dat,
+    link = "logit"
+  )
+
+# model summary
+summary(fitLogisticGest)
+
+# estimates and CIs
+exp(cbind(fitLogisticGest$est, confint(fitLogisticGest)))
+
+# plot estimating function
+estf3 <- estfun(fitLogisticGest)
+plot(estf3)
+```
