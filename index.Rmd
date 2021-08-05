@@ -513,7 +513,15 @@ tsriLogitMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2, m3))
 }
 
-tsrigmmlogit <- gmm(tsriLogitMoments, x = dat, t0 = c(0,0,.5,.5,.5), vcov = "iid")
+# obtain starting values for gmm
+stage1 <- lm(X ~ Z)
+res <- residuals(stage1)
+coef(stage1)
+stage2 <- glm(Y ~ X + res, family = binomial)
+coef(stage2)
+
+# gmm fit
+tsrigmmlogit <- gmm(tsriLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tsrigmmlogit)
