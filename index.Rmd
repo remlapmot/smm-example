@@ -193,6 +193,9 @@ msmmAltMoments <- function(theta, x){
 
 msmm2 <- gmm(msmmAltMoments, x = dat, t0 = c(0, 0), vcov = "iid")
 
+# model summary
+summary(msmm2)
+
 # exponentiate estimates
 exp(cbind(coef(msmm2), confint(msmm2)$test))
 
