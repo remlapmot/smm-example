@@ -421,6 +421,33 @@ summary(fitLogisticTSPS)
 exp(cbind(fitLogisticTSPS$est, confint(fitLogisticTSPS)))
 ```
 
+* TSPS estimated using GMM
+```{r}
+tspsLogitMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # generate first stage residuals
+  stage1 <- lm(X ~ Z1)
+  xhat <- fitted.values(stage1)
+  # moments
+  a1 <- (X - theta[1] - Z1*theta[2])
+  a2 <- (X - theta[1] - Z1*theta[2])*Z1
+  m1 <- (Y - plogis(theta[3] + (theta[1] + theta[2]*Z1)*theta[4]))
+  m2 <- (Y - plogis(theta[3] + (theta[1] + theta[2]*Z1)*theta[4]))*xhat
+  return(cbind(a1, a2, m1, m2))
+}
+
+tspsgmmlogit <- gmm(tspsLogitMoments, x = dat, t0 = rep(0,4), vcov = "iid")
+
+# estimates
+summary(tspsgmmlogit)
+
+# causal risk ratio
+exp(cbind(coef(tspsgmmlogit), confint(tspsgmmlogit)$test)[3:4,])
+```
+
 #### Two-stage residual inclusion
 ```{r}
 fitLogisticTSRI <-
