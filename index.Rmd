@@ -497,7 +497,15 @@ tspsLogitMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2))
 }
 
-tspsgmmlogit <- gmm(tspsLogitMoments, x = dat, t0 = rep(0,4), vcov = "iid")
+# find initial values
+stage1 <- lm(X ~ Z, data = dat)
+xhat <- fitted.values(stage1)
+summary(stage1)
+stage2 <- glm(Y ~ xhat, data = dat, family = binomial)
+summary(stage2)
+
+# gmm fit
+tspsgmmlogit <- gmm(tspsLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tspsgmmlogit)
