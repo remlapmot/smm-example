@@ -317,7 +317,6 @@ plot(estf)
 ```{r}
 dat$yxm1 <- dat$Y * (1 - dat$X)
 dat$yx <- dat$Y * dat$X
-dat$mz <- 1 - dat$Z
 
 # first stage
 stage1 <- glm(yx ~ Z, data = dat, family = binomial)
