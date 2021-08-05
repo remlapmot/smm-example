@@ -321,7 +321,6 @@ dat$yx <- dat$Y * dat$X
 # first stage
 stage1 <- lm(yx ~ Z, data = dat)
 summary(stage1)
-dat$hatyx <- fitted.values(stage1)
 
 # tsls fit
 tslsmsmm <- ivreg(yxm1 ~ yx | Z, data = dat)
