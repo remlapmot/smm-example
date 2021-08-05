@@ -319,7 +319,7 @@ dat$yxm1 <- dat$Y * (1 - dat$X)
 dat$yx <- dat$Y * dat$X
 
 # first stage
-stage1 <- glm(yx ~ Z, data = dat, family = binomial)
+stage1 <- lm(yx ~ Z, data = dat)
 summary(stage1)
 dat$hatyx <- fitted.values(stage1)
 
