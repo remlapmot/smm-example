@@ -317,12 +317,10 @@ plot(estf)
 ```{r}
 dat$yxm1 <- dat$Y * (1 - dat$X)
 dat$yx <- dat$Y * dat$X
-dat$mz <- 1 - dat$Z
 
 # first stage
-stage1 <- glm(yx ~ Z, data = dat, family = binomial)
+stage1 <- lm(yx ~ Z, data = dat)
 summary(stage1)
-dat$hatyx <- fitted.values(stage1)
 
 # tsls fit
 tslsmsmm <- ivreg(yxm1 ~ yx | Z, data = dat)
@@ -340,6 +338,36 @@ logcrrse
 
 # crr with 95% CI
 res <- unname(c(-1/beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
+res
+
+# baseline risk
+cbind(coef(tslsmsmm), confint(tslsmsmm))[1,]
+```
+
+* TSLS using an alternative transformation, pages 109 and 110, i.e. outcome YX with exposure Y(1 - X)
+```{r}
+dat$yxm1 <- dat$Y * (1 - dat$X)
+
+# first stage
+stage1 <- lm(yxm1 ~ Z, data = dat)
+summary(stage1)
+
+# tsls fit
+tslsmsmm2 <- ivreg(yx ~ yxm1 | Z, data = dat)
+summary(tslsmsmm2)
+
+# causal risk ratio estimate
+beta <- coef(tslsmsmm2)
+-1 * beta[2]
+logcrr <- log(-1 * beta[2])
+
+# delta-method SE
+estvar <- vcov(tslsmsmm2)
+logcrrse <- deltamethod(~ log(-1 * x2), beta, estvar)
+logcrrse
+
+# crr with 95% CI
+res <- unname(c(-1*beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
 res
 ```
 
@@ -485,7 +513,15 @@ tsriLogitMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2, m3))
 }
 
-tsrigmmlogit <- gmm(tsriLogitMoments, x = dat, t0 = c(0,0,.5,.5,.5), vcov = "iid")
+# obtain starting values for gmm
+stage1 <- lm(X ~ Z)
+res <- residuals(stage1)
+coef(stage1)
+stage2 <- glm(Y ~ X + res, family = binomial)
+coef(stage2)
+
+# gmm fit
+tsrigmmlogit <- gmm(tsriLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tsrigmmlogit)
