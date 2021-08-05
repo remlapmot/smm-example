@@ -226,7 +226,10 @@ stat <- function(data, indices) {
   return(coef(stage2))
 }
 
-boot(data = dat, statistic = stat, R = 100)
+bootrun <- boot(data = dat, statistic = stat, R = 100)
+print(bootrun)
+bci <- boot.ci(bootrun, type = 'norm', index = 2)
+exp(c(bci$t0, bci$normal[-1]))
 ```
 
 * TSRI estimated using GMM with multiplicative error
