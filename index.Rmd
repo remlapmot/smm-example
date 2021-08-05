@@ -344,6 +344,33 @@ res
 cbind(coef(tslsmsmm), confint(tslsmsmm))[1,]
 ```
 
+* TSLS using an alternative transformation, pages 109 and 110, i.e. outcome YX with exposure Y(1 - X)
+```{r}
+dat$yxm1 <- dat$Y * (1 - dat$X)
+
+# first stage
+stage1 <- lm(yxm1 ~ Z, data = dat)
+summary(stage1)
+
+# tsls fit
+tslsmsmm2 <- ivreg(yx ~ yxm1 | Z, data = dat)
+summary(tslsmsmm2)
+
+# causal risk ratio estimate
+beta <- coef(tslsmsmm2)
+-1 * beta[2]
+logcrr <- log(-1 * beta[2])
+
+# delta-method SE
+estvar <- vcov(tslsmsmm2)
+logcrrse <- deltamethod(~ log(-1 * x2), beta, estvar)
+logcrrse
+
+# crr with 95% CI
+res <- unname(c(-1*beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
+res
+```
+
 ## Logistic structural mean model: estimation of the causal risk ratio
 
 ```{r}
