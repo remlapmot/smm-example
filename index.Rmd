@@ -91,6 +91,13 @@ cbind(coef(asmm2), confint(asmm2)$test)
 # specTest(asmm2)
 ```
 
+* TSLS fit
+```{r}
+asmmtsls <- ivreg(Y ~ X | Z, data = dat)
+summary(asmmtsls)
+cbind(coef(asmmtsls), confint(asmmtsls))
+```
+
 ### Comparison fits
 
 #### Two-stage residual inclusion
