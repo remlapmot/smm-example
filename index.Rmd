@@ -295,7 +295,15 @@ tsriLogAddMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2, m3))
 }
 
-tsrigmmlog2 <- gmm(tsriLogAddMoments, x = dat, t0 = rep(0,5), vcov = "iid")
+# find initial values
+stage1 <- lm(X ~ Z, data = dat)
+summary(stage1)
+res <- residuals(stage1)
+stage2 <- logbin(Y ~ X + res, data = dat)
+summary(stage2)
+
+# gmm fit
+tsrigmmlog2 <- gmm(tsriLogAddMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tsrigmmlog2)
