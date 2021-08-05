@@ -421,7 +421,7 @@ summary(fitLogisticTSPS)
 exp(cbind(fitLogisticTSPS$est, confint(fitLogisticTSPS)))
 ```
 
-* Two-stage residual inclusion
+#### Two-stage residual inclusion
 ```{r}
 fitLogisticTSRI <-
   ivglm(
