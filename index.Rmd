@@ -377,7 +377,7 @@ res <- unname(c(-1*beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcr
 res
 ```
 
-## Logistic structural mean model: estimation of the causal risk ratio
+## Logistic structural mean model: estimation of the causal odds ratio
 
 ```{r}
 # association model
