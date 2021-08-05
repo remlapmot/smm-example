@@ -510,7 +510,7 @@ tspsgmmlogit <- gmm(tspsLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)
 # estimates
 summary(tspsgmmlogit)
 
-# causal risk ratio
+# baseline odds and causal odds ratio
 exp(cbind(coef(tspsgmmlogit), confint(tspsgmmlogit)$test)[3:4,])
 ```
 
