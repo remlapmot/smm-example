@@ -339,6 +339,9 @@ logcrrse
 # crr with 95% CI
 res <- unname(c(-1/beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
 res
+
+# baseline risk
+cbind(coef(tslsmsmm), confint(tslsmsmm))[1,]
 ```
 
 ## Logistic structural mean model: estimation of the causal risk ratio
