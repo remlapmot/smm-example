@@ -120,7 +120,7 @@ tsriIdentAddMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2, m3))
 }
 
-tsrigmmident <- gmm(tsriIdentAddMoments, x = dat, t0 = rep(0,5), vcov = "iid")
+tsrigmmident <- gmm(tsriIdentAddMoments, x = dat, t0 = rep(0, 5), vcov = "iid")
 
 # estimates
 summary(tsrigmmident)
