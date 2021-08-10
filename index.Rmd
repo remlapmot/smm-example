@@ -213,6 +213,9 @@ exp(cbind(coef(msmm2), confint(msmm2)$test))
 ### Comparison fits
 
 #### Two-stage residual inclusion
+
+* TSRI with second stage log-binomial regression
+
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
 stage1 <- lm(X ~ Z, data = dat)
 dat$res <- residuals(stage1)
