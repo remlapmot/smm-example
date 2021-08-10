@@ -288,7 +288,8 @@ tsriLogMultMoments <- function(theta, x){
 # summary(stage2)
 
 # gmm fit
-tsrigmmlog1 <- gmm(tsriLogMultMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
+tsrigmmlog1 <- gmm(tsriLogMultMoments, x = dat, 
+                   t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tsrigmmlog1)
@@ -324,7 +325,8 @@ stage2 <- logbin(Y ~ X + res, data = dat)
 summary(stage2)
 
 # gmm fit
-tsrigmmlog2 <- gmm(tsriLogAddMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
+tsrigmmlog2 <- gmm(tsriLogAddMoments, x = dat, 
+                   t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
 
 # estimates
 summary(tsrigmmlog2)
