@@ -279,13 +279,13 @@ tsriLogMultMoments <- function(theta, x){
   return(cbind(a1, a2, m1, m2, m3))
 }
 
-# find initial values
-stage1 <- lm(X ~ Z, data = dat)
-summary(stage1)
-res <- residuals(stage1)
-dat$Ystar <- dat$Y + 1
-stage2 <- glm(Ystar ~ X + res, data = dat, family = Gamma(link = "log"))
-summary(stage2)
+# use initial values from chunk above = or glm Gamma log link code below
+# stage1 <- lm(X ~ Z, data = dat)
+# summary(stage1)
+# res <- residuals(stage1)
+# dat$Ystar[dat$Y == 0] <- dat$Y[dat$Y == 0] + 0.001
+# stage2 <- glm(Ystar ~ X + res, data = dat, family = Gamma(link = "log"))
+# summary(stage2)
 
 # gmm fit
 tsrigmmlog1 <- gmm(tsriLogMultMoments, x = dat, t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
