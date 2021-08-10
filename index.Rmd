@@ -50,6 +50,7 @@ library(logbin)
 library(boot)
 library(ivreg)
 library(msm)
+library(geeM)
 ```
 
 ## Additive structural mean model: estimation of the causal risk difference
@@ -240,6 +241,23 @@ bootrun <- boot(data = dat, statistic = stat, R = 100)
 print(bootrun)
 bci <- boot.ci(bootrun, type = 'norm', index = 2)
 exp(c(bci$t0, bci$normal[-1]))
+```
+
+* TSRI with second stage Gamma regression with log-link
+
+```{r}
+stage1 <- lm(X ~ Z, data = dat)
+dat$res <- residuals(stage1)
+stage2 <- geem(Y ~ X + res, data = dat, family = Gamma(link = "log"))
+
+# model summary
+smry <- summary(stage2)
+smry
+
+# estimates and (perhaps slightly incorrect) CIs
+exp(cbind(coef(stage2), 
+          lci = coef(stage2) - 1.96*smry$se.model, 
+          uci = coef(stage2) + 1.96*smry$se.model))
 ```
 
 * TSRI estimated using GMM with multiplicative error
