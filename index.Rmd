@@ -460,6 +460,50 @@ res <- unname(c(-1*beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcr
 res
 ```
 
+#### MSMM with initial values
+
+* MSMM using GMM with initial values from TSRI with a second stage Gamma regression with a log link
+
+```{r}
+stage1 <- lm(X ~ Z, data = dat)
+dat$res <- residuals(stage1)
+dat$Ystar <- dat$Y
+dat <- dat %>% 
+  mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
+stage2glm <- glm(Ystar ~ X + res, data = dat, 
+                 family = Gamma('log'))
+
+# model summary
+smry <- summary(stage2glm)
+smry
+
+b0 <- coef(stage2)
+exp(b0[1])
+b0
+
+msmmMoments <- function(theta, x){
+  # extract variables from x
+  Y <- x[,"Y"]
+  X <- x[,"X"]
+  Z1 <- x[,"Z"]
+  # moments
+  m1 <- (Y*exp(-1*X*theta[2]) - theta[1])
+  m2 <- (Y*exp(-1*X*theta[2]) - theta[1])*Z1
+  return(cbind(m1, m2))
+}
+
+msmm2 <- gmm(msmmMoments, x = dat, 
+             t0 = c(exp(b0[1]), b0[2]), vcov = "iid")
+
+# estimates
+summary(msmm2)
+
+# causal risk ratio
+exp(cbind(coef(msmm2), confint(msmm2)$test)[2,])
+
+# E[Y(0)]
+cbind(coef(msmm2), confint(msmm2)$test)[1,]
+```
 ## Logistic structural mean model: estimation of the causal odds ratio
 
 ```{r}
