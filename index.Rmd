@@ -24,6 +24,19 @@ require("Hmisc")
 This is the code from the appendix of Clarke, et al., Estimating Structural Mean Models with
 Multiple Instrumental Variables Using the Generalised Method of Moments. Statistical Science, 2015, 30, 1, 96-177. https://dx.doi.org/10.1214/14-STS503
 
+* Load R packages
+```{r setup, message=FALSE}
+library(gmm)
+library(ivtools)
+library(logbin)
+library(boot)
+library(ivreg)
+library(msm)
+library(geeM)
+library(geepack)
+library(dplyr)
+```
+
 # Example data
 
 Using the data from example 2 from the `ivtools::ivglm()` helpfile.
@@ -41,17 +54,6 @@ dat <- data.frame(Z, X, Y)
 ```
 
 # Fitting Structural Mean Models
-
-* Setup: we need the gmm and ivtools packages
-```{r setup, message=FALSE}
-library(gmm)
-library(ivtools)
-library(logbin)
-library(boot)
-library(ivreg)
-library(msm)
-library(geeM)
-```
 
 ## Additive structural mean model: estimation of the causal risk difference
 
