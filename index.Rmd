@@ -399,6 +399,47 @@ estf <- estfun(fitLogGest)
 plot(estf)
 ```
 
+#### G-estimation with initial values from TSRI
+
+```{r}
+stage1 <- lm(X ~ Z, data = dat)
+dat$res <- residuals(stage1)
+dat$Ystar <- dat$Y
+dat <-
+  dat %>% mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
+stage2glm <- glm(Ystar ~ X + res, data = dat, 
+                 family = Gamma('log'))
+b0 <- coef(stage2glm)
+b0
+
+fitZ.L <- glm(Z ~ 1, data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+summary(fitY.LZX)
+
+fitLogGest <-
+  ivglm(
+    estmethod = "g",
+    X = "X",
+    fitZ.L = fitZ.L,
+    fitY.LZX = fitY.LZX,
+    data = dat,
+    link = "log",
+    Y = "Y",
+    x = b0[2]
+  )
+
+# model summary
+summary(fitLogGest)
+
+# estimates and CIs
+exp(cbind(fitLogGest$est, confint(fitLogGest)))
+
+# plot the estimating function
+estf <- estfun(fitLogGest)
+plot(estf)
+```
+
+
 #### TSLS using transformed variables
 
 * Equations 24 and 25 of Clarke et al., i.e. outcome Y(1 - X) with exposure YX
