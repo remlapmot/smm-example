@@ -245,7 +245,7 @@ bci <- boot.ci(bootrun, type = 'norm', index = 2)
 exp(c(bci$t0, bci$normal[-1]))
 ```
 
-* TSRI with second stage Gamma regression with log-link
+* TSRI with second stage Gamma regression with log-link: `geeM::geem()` fit
 
 ```{r}
 stage1 <- lm(X ~ Z, data = dat)
