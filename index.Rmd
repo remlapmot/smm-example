@@ -280,6 +280,22 @@ smry
 # causal risk ratio
 exp(cbind(coef(stage2glm), confint.default(stage2glm)))
 ```
+
+* TSRI with second stage Gamma regression with log-link: `geepack::geeglm()` fit
+
+```{r}
+dat$id <- 1:nrow(dat)
+stage2geeglm <- geeglm(Ystar ~ X + res, id = id, data = dat, 
+                 family = Gamma('log'))
+
+# model summary
+smry <- summary(stage2geeglm)
+smry
+
+# causal risk ratio
+exp(cbind(coef(stage2geeglm), confint.default(stage2geeglm)))
+```
+
 * TSRI estimated using GMM with multiplicative error
 ```{r}
 tsriLogMultMoments <- function(theta, x){
