@@ -262,6 +262,24 @@ exp(cbind(coef(stage2),
           uci = coef(stage2) + 1.96*smry$se.model))
 ```
 
+* TSRI with second stage Gamma regression with log-link: `stats::glm()` fit
+
+```{r}
+stage1 <- lm(X ~ Z, data = dat)
+dat$res <- residuals(stage1)
+dat$Ystar <- dat$Y
+dat <-
+  dat %>% mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
+stage2glm <- glm(Ystar ~ X + res, data = dat, 
+                 family = Gamma('log'))
+
+# model summary
+smry <- summary(stage2glm)
+smry
+
+# causal risk ratio
+exp(cbind(coef(stage2glm), confint.default(stage2glm)))
+```
 * TSRI estimated using GMM with multiplicative error
 ```{r}
 tsriLogMultMoments <- function(theta, x){
