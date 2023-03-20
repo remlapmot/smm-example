@@ -8,10 +8,11 @@ output:
     toc_float:
       collapsed: false
       smooth_scroll: false
-    toc_depth: 4
+    toc_depth: 5
     code_download: true
     code_folding: show
     anchor_sections: true
+    highlight: arrow
 ---
 
 ```{r include=FALSE}
@@ -19,7 +20,7 @@ require("Hmisc")
 ```
 `r Hmisc::hidingTOC(levels = 4)`
 
-# Introduction
+## Introduction
 
 This is the code from the appendix of Clarke, et al., Estimating Structural Mean Models with
 Multiple Instrumental Variables Using the Generalised Method of Moments. Statistical Science, 2015, 30, 1, 96-177. https://dx.doi.org/10.1214/14-STS503
@@ -37,7 +38,7 @@ library(geepack)
 library(dplyr)
 ```
 
-# Example data
+## Example data
 
 Using the data from example 2 from the `ivtools::ivglm()` helpfile.
 
@@ -47,15 +48,15 @@ n <- 1000
 psi0 <- 0.5
 psi1 <- 0.2
 Z <- rbinom(n, 1, 0.5)
-X <- rbinom(n, 1, 0.7*Z + 0.2*(1 - Z)) 
-m0 <- plogis(1 + 0.8*X - 0.39*Z)
-Y <- rbinom(n, 1, plogis(psi0*X + log(m0/(1 - m0)))) 
+X <- rbinom(n, 1, 0.7 * Z + 0.2 * (1 - Z))
+m0 <- plogis(1 + 0.8 * X - 0.39 * Z)
+Y <- rbinom(n, 1, plogis(psi0 * X + log(m0 / (1 - m0))))
 dat <- data.frame(Z, X, Y)
 ```
 
-# Fitting Structural Mean Models
+## Fitting Structural Mean Models
 
-## Additive structural mean model: estimation of the causal risk difference
+### Additive structural mean model: estimation of the causal risk difference
 
 * Formula syntax
 ```{r}
@@ -73,14 +74,14 @@ cbind(coef(asmm), confint(asmm)$test)
 
 * Alternative function syntax
 ```{r}
-asmmMoments <- function(theta, x){
+asmmMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  m1 <- (Y - theta[1] - theta[2]*X)
-  m2 <- (Y - theta[1] - theta[2]*X)*Z1
+  m1 <- (Y - theta[1] - theta[2] * X)
+  m2 <- (Y - theta[1] - theta[2] * X) * Z1
   return(cbind(m1, m2))
 }
 
@@ -101,25 +102,25 @@ summary(asmmtsls)
 cbind(coef(asmmtsls), confint(asmmtsls))
 ```
 
-### Comparison fits
+#### Comparison fits
 
-#### Two-stage residual inclusion
+##### Two-stage residual inclusion
 * TSRI estimated using GMM with additive error
 ```{r}
-tsriIdentAddMoments <- function(theta, x){
+tsriIdentAddMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # generate first stage residuals
   stage1 <- lm(X ~ Z1)
   res <- residuals(stage1)
   # moments
-  a1 <- (X - theta[1] - Z1*theta[2])
-  a2 <- (X - theta[1] - Z1*theta[2])*Z1
-  m1 <- (Y - (theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))
-  m2 <- (Y - (theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*X
-  m3 <- (Y - (theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*res
+  a1 <- (X - theta[1] - Z1 * theta[2])
+  a2 <- (X - theta[1] - Z1 * theta[2]) * Z1
+  m1 <- (Y - (theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2])))
+  m2 <- (Y - (theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * X
+  m3 <- (Y - (theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * res
   return(cbind(a1, a2, m1, m2, m3))
 }
 
@@ -129,13 +130,13 @@ tsrigmmident <- gmm(tsriIdentAddMoments, x = dat, t0 = rep(0, 5), vcov = "iid")
 summary(tsrigmmident)
 
 # causal risk difference
-cbind(coef(tsrigmmident), confint(tsrigmmident)$test)[3:5,]
+cbind(coef(tsrigmmident), confint(tsrigmmident)$test)[3:5, ]
 ```
 
-#### G-estimation
+##### G-estimation
 ```{r}
 fitZ.L <- glm(Z ~ 1, data = dat)
-fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X * Z, family = "binomial", data = dat)
 fitIdentGest <-
   ivglm(
     estmethod = "g",
@@ -158,17 +159,17 @@ estf1 <- estfun(fitIdentGest)
 plot(estf1)
 ```
 
-## Multiplication structural mean model: estimation of the causal risk ratio
+### Multiplication structural mean model: estimation of the causal risk ratio
 
 ```{r}
-msmmMoments <- function(theta, x){
+msmmMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  m1 <- (Y*exp(-1*X*theta[2]) - theta[1])
-  m2 <- (Y*exp(-1*X*theta[2]) - theta[1])*Z1
+  m1 <- (Y * exp(-1 * X * theta[2]) - theta[1])
+  m2 <- (Y * exp(-1 * X * theta[2]) - theta[1]) * Z1
   return(cbind(m1, m2))
 }
 
@@ -178,10 +179,10 @@ msmm <- gmm(msmmMoments, x = dat, t0 = c(0, 0), vcov = "iid")
 summary(msmm)
 
 # causal risk ratio
-exp(cbind(coef(msmm), confint(msmm)$test)[2,])
+exp(cbind(coef(msmm), confint(msmm)$test)[2, ])
 
 # E[Y(0)]
-cbind(coef(msmm), confint(msmm)$test)[1,]
+cbind(coef(msmm), confint(msmm)$test)[1, ]
 
 # over-identification test
 # specTest(msmm)
@@ -190,14 +191,14 @@ cbind(coef(msmm), confint(msmm)$test)[1,]
 * Alternative syntax
 
 ```{r}
-msmmAltMoments <- function(theta, x){
+msmmAltMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  m1 <- (Y*exp(-theta[1] - X*theta[2]) - 1)
-  m2 <- (Y*exp(-theta[1] - X*theta[2]) - 1)*Z1
+  m1 <- (Y * exp(-theta[1] - X * theta[2]) - 1)
+  m2 <- (Y * exp(-theta[1] - X * theta[2]) - 1) * Z1
   return(cbind(m1, m2))
 }
 
@@ -213,9 +214,9 @@ exp(cbind(coef(msmm2), confint(msmm2)$test))
 # specTest(msmm2)
 ```
 
-### Comparison fits
+#### Comparison fits
 
-#### Two-stage residual inclusion
+##### Two-stage residual inclusion
 
 * TSRI with second stage log-binomial regression
 
@@ -241,7 +242,7 @@ stat <- function(data, indices) {
 
 bootrun <- boot(data = dat, statistic = stat, R = 100)
 print(bootrun)
-bci <- boot.ci(bootrun, type = 'norm', index = 2)
+bci <- boot.ci(bootrun, type = "norm", index = 2)
 exp(c(bci$t0, bci$normal[-1]))
 ```
 
@@ -257,9 +258,10 @@ smry <- summary(stage2)
 smry
 
 # estimates and (perhaps slightly incorrect) CIs
-exp(cbind(coef(stage2), 
-          lci = coef(stage2) - 1.96*smry$se.model, 
-          uci = coef(stage2) + 1.96*smry$se.model))
+exp(cbind(coef(stage2),
+  lci = coef(stage2) - 1.96 * smry$se.model,
+  uci = coef(stage2) + 1.96 * smry$se.model
+))
 ```
 
 * TSRI with second stage Gamma regression with log-link: `stats::glm()` fit
@@ -270,8 +272,10 @@ dat$res <- residuals(stage1)
 dat$Ystar <- dat$Y
 dat <-
   dat %>% mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
-stage2glm <- glm(Ystar ~ X + res, data = dat, 
-                 family = Gamma('log'))
+stage2glm <- glm(Ystar ~ X + res,
+  data = dat,
+  family = Gamma("log")
+)
 
 # model summary
 smry <- summary(stage2glm)
@@ -285,8 +289,10 @@ exp(cbind(coef(stage2glm), confint.default(stage2glm)))
 
 ```{r}
 dat$id <- 1:nrow(dat)
-stage2geeglm <- geeglm(Ystar ~ X + res, id = id, data = dat, 
-                 family = Gamma('log'))
+stage2geeglm <- geeglm(Ystar ~ X + res,
+  id = id, data = dat,
+  family = Gamma("log")
+)
 
 # model summary
 smry <- summary(stage2geeglm)
@@ -298,20 +304,20 @@ exp(cbind(coef(stage2geeglm), confint.default(stage2geeglm)))
 
 * TSRI estimated using GMM with multiplicative error
 ```{r}
-tsriLogMultMoments <- function(theta, x){
+tsriLogMultMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # generate first stage residuals
   stage1 <- lm(X ~ Z1)
   res <- residuals(stage1)
   # moments
-  a1 <- (X - theta[1] - Z1*theta[2])
-  a2 <- (X - theta[1] - Z1*theta[2])*Z1
-  m1 <- (Y*exp(-theta[3] - X*theta[4] - theta[5]*(X - theta[1] - Z1*theta[2])) - 1)
-  m2 <- (Y*exp(-theta[3] - X*theta[4] - theta[5]*(X - theta[1] - Z1*theta[2])) - 1)*X
-  m3 <- (Y*exp(-theta[3] - X*theta[4] - theta[5]*(X - theta[1] - Z1*theta[2])) - 1)*res
+  a1 <- (X - theta[1] - Z1 * theta[2])
+  a2 <- (X - theta[1] - Z1 * theta[2]) * Z1
+  m1 <- (Y * exp(-theta[3] - X * theta[4] - theta[5] * (X - theta[1] - Z1 * theta[2])) - 1)
+  m2 <- (Y * exp(-theta[3] - X * theta[4] - theta[5] * (X - theta[1] - Z1 * theta[2])) - 1) * X
+  m3 <- (Y * exp(-theta[3] - X * theta[4] - theta[5] * (X - theta[1] - Z1 * theta[2])) - 1) * res
   return(cbind(a1, a2, m1, m2, m3))
 }
 
@@ -324,32 +330,34 @@ tsriLogMultMoments <- function(theta, x){
 # summary(stage2)
 
 # gmm fit
-tsrigmmlog1 <- gmm(tsriLogMultMoments, x = dat, 
-                   t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
+tsrigmmlog1 <- gmm(tsriLogMultMoments,
+  x = dat,
+  t0 = c(coef(stage1), coef(stage2)), vcov = "iid"
+)
 
 # estimates
 summary(tsrigmmlog1)
 
 # causal risk ratio
-exp(cbind(coef(tsrigmmlog1), confint(tsrigmmlog1)$test)[3:5,])
+exp(cbind(coef(tsrigmmlog1), confint(tsrigmmlog1)$test)[3:5, ])
 ```
 
 * TSRI estimated using GMM with additive error
 ```{r}
-tsriLogAddMoments <- function(theta, x){
+tsriLogAddMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # generate first stage residuals
   stage1 <- lm(X ~ Z1)
   res <- residuals(stage1)
   # moments
-  a1 <- (X - theta[1] - Z1*theta[2])
-  a2 <- (X - theta[1] - Z1*theta[2])*Z1
-  m1 <- (Y - exp(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))
-  m2 <- (Y - exp(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*X
-  m3 <- (Y - exp(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*res
+  a1 <- (X - theta[1] - Z1 * theta[2])
+  a2 <- (X - theta[1] - Z1 * theta[2]) * Z1
+  m1 <- (Y - exp(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2])))
+  m2 <- (Y - exp(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * X
+  m3 <- (Y - exp(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * res
   return(cbind(a1, a2, m1, m2, m3))
 }
 
@@ -361,20 +369,22 @@ stage2 <- logbin(Y ~ X + res, data = dat)
 summary(stage2)
 
 # gmm fit
-tsrigmmlog2 <- gmm(tsriLogAddMoments, x = dat, 
-                   t0 = c(coef(stage1), coef(stage2)), vcov = "iid")
+tsrigmmlog2 <- gmm(tsriLogAddMoments,
+  x = dat,
+  t0 = c(coef(stage1), coef(stage2)), vcov = "iid"
+)
 
 # estimates
 summary(tsrigmmlog2)
 
 # causal risk ratio
-exp(cbind(coef(tsrigmmlog2), confint(tsrigmmlog2)$test)[3:5,])
+exp(cbind(coef(tsrigmmlog2), confint(tsrigmmlog2)$test)[3:5, ])
 ```
 
-#### G-estimation
+##### G-estimation
 ```{r}
 fitZ.L <- glm(Z ~ 1, data = dat)
-fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X * Z, family = "binomial", data = dat)
 summary(fitY.LZX)
 
 fitLogGest <-
@@ -399,7 +409,7 @@ estf <- estfun(fitLogGest)
 plot(estf)
 ```
 
-#### G-estimation with initial values from TSRI
+##### G-estimation with initial values from TSRI
 
 ```{r}
 stage1 <- lm(X ~ Z, data = dat)
@@ -407,13 +417,15 @@ dat$res <- residuals(stage1)
 dat$Ystar <- dat$Y
 dat <-
   dat %>% mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
-stage2glm <- glm(Ystar ~ X + res, data = dat, 
-                 family = Gamma('log'))
+stage2glm <- glm(Ystar ~ X + res,
+  data = dat,
+  family = Gamma("log")
+)
 b0 <- coef(stage2glm)
 b0
 
 fitZ.L <- glm(Z ~ 1, data = dat)
-fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X * Z, family = "binomial", data = dat)
 summary(fitY.LZX)
 
 fitLogGest <-
@@ -439,8 +451,7 @@ estf <- estfun(fitLogGest)
 plot(estf)
 ```
 
-
-#### TSLS using transformed variables
+##### TSLS using transformed variables
 
 * Equations 24 and 25 of Clarke et al., i.e. outcome Y(1 - X) with exposure YX
 
@@ -467,11 +478,11 @@ logcrrse <- deltamethod(~ log(-1 / x2), beta, estvar)
 logcrrse
 
 # crr with 95% CI
-res <- unname(c(-1/beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
+res <- unname(c(-1 / beta[2], exp(logcrr - 1.96 * logcrrse), exp(logcrr + 1.96 * logcrrse)))
 res
 
 # baseline risk
-cbind(coef(tslsmsmm), confint(tslsmsmm))[1,]
+cbind(coef(tslsmsmm), confint(tslsmsmm))[1, ]
 ```
 
 * TSLS using an alternative transformation, pages 109 and 110, i.e. outcome YX with exposure Y(1 - X)
@@ -497,11 +508,11 @@ logcrrse <- deltamethod(~ log(-1 * x2), beta, estvar)
 logcrrse
 
 # crr with 95% CI
-res <- unname(c(-1*beta[2], exp(logcrr - 1.96*logcrrse), exp(logcrr + 1.96*logcrrse)))
+res <- unname(c(-1 * beta[2], exp(logcrr - 1.96 * logcrrse), exp(logcrr + 1.96 * logcrrse)))
 res
 ```
 
-#### MSMM with initial values
+##### MSMM with initial values
 
 * MSMM using GMM with initial values from TSRI with a second stage Gamma regression with a log link
 
@@ -509,10 +520,12 @@ res
 stage1 <- lm(X ~ Z, data = dat)
 dat$res <- residuals(stage1)
 dat$Ystar <- dat$Y
-dat <- dat %>% 
+dat <- dat %>%
   mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
-stage2glm <- glm(Ystar ~ X + res, data = dat, 
-                 family = Gamma('log'))
+stage2glm <- glm(Ystar ~ X + res,
+  data = dat,
+  family = Gamma("log")
+)
 
 # model summary
 smry <- summary(stage2glm)
@@ -522,31 +535,33 @@ b0 <- coef(stage2)
 exp(b0[1])
 b0
 
-msmmMoments <- function(theta, x){
+msmmMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  m1 <- (Y*exp(-1*X*theta[2]) - theta[1])
-  m2 <- (Y*exp(-1*X*theta[2]) - theta[1])*Z1
+  m1 <- (Y * exp(-1 * X * theta[2]) - theta[1])
+  m2 <- (Y * exp(-1 * X * theta[2]) - theta[1]) * Z1
   return(cbind(m1, m2))
 }
 
-msmm2 <- gmm(msmmMoments, x = dat, 
-             t0 = c(exp(b0[1]), b0[2]), vcov = "iid")
+msmm2 <- gmm(msmmMoments,
+  x = dat,
+  t0 = c(exp(b0[1]), b0[2]), vcov = "iid"
+)
 
 # estimates
 summary(msmm2)
 
 # causal risk ratio
-exp(cbind(coef(msmm2), confint(msmm2)$test)[2,])
+exp(cbind(coef(msmm2), confint(msmm2)$test)[2, ])
 
 # E[Y(0)]
-cbind(coef(msmm2), confint(msmm2)$test)[1,]
+cbind(coef(msmm2), confint(msmm2)$test)[1, ]
 ```
 
-#### Alt MSMM with initial values
+##### Alt MSMM with initial values
 
 * Alternative moments MSMM using GMM with initial values from TSRI with a second stage Gamma regression with a log link
 
@@ -554,10 +569,12 @@ cbind(coef(msmm2), confint(msmm2)$test)[1,]
 stage1 <- lm(X ~ Z, data = dat)
 dat$res <- residuals(stage1)
 dat$Ystar <- dat$Y
-dat <- dat %>% 
+dat <- dat %>%
   mutate(Ystar = recode(Y, `0` = 0.001, `1` = 1))
-stage2glm <- glm(Ystar ~ X + res, data = dat, 
-                 family = Gamma('log'))
+stage2glm <- glm(Ystar ~ X + res,
+  data = dat,
+  family = Gamma("log")
+)
 
 # model summary
 smry <- summary(stage2glm)
@@ -566,19 +583,21 @@ smry
 b0 <- coef(stage2)
 b0
 
-msmmAltMoments <- function(theta, x){
+msmmAltMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  m1 <- (Y*exp(-theta[1] - X*theta[2]) - 1)
-  m2 <- (Y*exp(-theta[1] - X*theta[2]) - 1)*Z1
+  m1 <- (Y * exp(-theta[1] - X * theta[2]) - 1)
+  m2 <- (Y * exp(-theta[1] - X * theta[2]) - 1) * Z1
   return(cbind(m1, m2))
 }
 
-msmm2 <- gmm(msmmAltMoments, x = dat, 
-             t0 = b0[1:2], vcov = "iid")
+msmm2 <- gmm(msmmAltMoments,
+  x = dat,
+  t0 = b0[1:2], vcov = "iid"
+)
 
 # model summary
 summary(msmm2)
@@ -587,44 +606,44 @@ summary(msmm2)
 exp(cbind(coef(msmm2), confint(msmm2)$test))
 ```
 
-## Logistic structural mean model: estimation of the causal odds ratio
+### Logistic structural mean model: estimation of the causal odds ratio
 
 ```{r}
 # association model
-am <- glm(Y ~ X + Z + X*Z, as.data.frame(dat), family = binomial)
+am <- glm(Y ~ X + Z + X * Z, as.data.frame(dat), family = binomial)
 print(summary(am))
 amfit <- coef(am)
 xblog <- qlogis(fitted.values(am))
 
 # causal model with incorrect SEs
-cmMoments <- function(theta, x){
+cmMoments <- function(theta, x) {
   # extract variables from x
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # moments
-  c1 <- (plogis(xblog - theta[2]*X) - theta[1])
-  c2 <- (plogis(xblog - theta[2]*X) - theta[1])*Z1
+  c1 <- (plogis(xblog - theta[2] * X) - theta[1])
+  c2 <- (plogis(xblog - theta[2] * X) - theta[1]) * Z1
   return(cbind(c1, c2))
 }
 
 cm <- gmm(cmMoments, x = dat, t0 = c(0, 0), vcov = "iid")
 cmfit <- coef(cm)
 
-lsmmMoments <- function(theta, x){
+lsmmMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
-  XZ1 <- X*Z1
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
+  XZ1 <- X * Z1
   # association model moments
-  xb <- theta[1] + theta[2]*X + theta[3]*Z1 + theta[4]*XZ1
+  xb <- theta[1] + theta[2] * X + theta[3] * Z1 + theta[4] * XZ1
   a1 <- (Y - plogis(xb))
-  a2 <- (Y - plogis(xb))*X
-  a3 <- (Y - plogis(xb))*Z1
-  a4 <- (Y - plogis(xb))*XZ1
+  a2 <- (Y - plogis(xb)) * X
+  a3 <- (Y - plogis(xb)) * Z1
+  a4 <- (Y - plogis(xb)) * XZ1
   # causal model moments
-  c1 <- (plogis(xb - theta[6]*X) - theta[5])
-  c2 <- (plogis(xb - theta[6]*X) - theta[5])*Z1
+  c1 <- (plogis(xb - theta[6] * X) - theta[5])
+  c2 <- (plogis(xb - theta[6] * X) - theta[5]) * Z1
   return(cbind(a1, a2, a3, a4, c1, c2))
 }
 
@@ -637,15 +656,15 @@ print(summary(lsmm))
 print(cbind(coef(lsmm), confint(lsmm)$test)[5])
 
 # exponentiate other estimates
-print(exp(cbind(coef(lsmm), confint(lsmm)$test)[-5,]))
+print(exp(cbind(coef(lsmm), confint(lsmm)$test)[-5, ]))
 
 # over-identification test
 # print(specTest(lsmm))
 ```
 
-### Comparison fits
+#### Comparison fits
 
-#### Two-stage predictor substitution
+##### Two-stage predictor substitution
 ```{r}
 fitX.LZ <- glm(X ~ Z, family = "binomial", data = dat)
 fitY.LX <- glm(Y ~ X, family = "binomial", data = dat)
@@ -667,19 +686,19 @@ exp(cbind(fitLogisticTSPS$est, confint(fitLogisticTSPS)))
 
 * TSPS estimated using GMM
 ```{r}
-tspsLogitMoments <- function(theta, x){
+tspsLogitMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # generate first stage residuals
   stage1 <- lm(X ~ Z1)
   xhat <- fitted.values(stage1)
   # moments
-  a1 <- (X - theta[1] - Z1*theta[2])
-  a2 <- (X - theta[1] - Z1*theta[2])*Z1
-  m1 <- (Y - plogis(theta[3] + (theta[1] + theta[2]*Z1)*theta[4]))
-  m2 <- (Y - plogis(theta[3] + (theta[1] + theta[2]*Z1)*theta[4]))*xhat
+  a1 <- (X - theta[1] - Z1 * theta[2])
+  a2 <- (X - theta[1] - Z1 * theta[2]) * Z1
+  m1 <- (Y - plogis(theta[3] + (theta[1] + theta[2] * Z1) * theta[4]))
+  m2 <- (Y - plogis(theta[3] + (theta[1] + theta[2] * Z1) * theta[4])) * xhat
   return(cbind(a1, a2, m1, m2))
 }
 
@@ -697,10 +716,10 @@ tspsgmmlogit <- gmm(tspsLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)
 summary(tspsgmmlogit)
 
 # baseline odds and causal odds ratio
-exp(cbind(coef(tspsgmmlogit), confint(tspsgmmlogit)$test)[3:4,])
+exp(cbind(coef(tspsgmmlogit), confint(tspsgmmlogit)$test)[3:4, ])
 ```
 
-#### Two-stage residual inclusion
+##### Two-stage residual inclusion
 ```{r}
 fitLogisticTSRI <-
   ivglm(
@@ -720,20 +739,20 @@ exp(cbind(fitLogisticTSRI$est, confint(fitLogisticTSRI)))
 
 * TSRI estimated using GMM
 ```{r}
-tsriLogitMoments <- function(theta, x){
+tsriLogitMoments <- function(theta, x) {
   # extract variables from x
-  Y <- x[,"Y"]
-  X <- x[,"X"]
-  Z1 <- x[,"Z"]
+  Y <- x[, "Y"]
+  X <- x[, "X"]
+  Z1 <- x[, "Z"]
   # generate first stage residuals
   stage1 <- lm(X ~ Z1)
   res <- residuals(stage1)
   # moments
-  a1 <- (X - theta[1] - Z1*theta[2])
-  a2 <- (X - theta[1] - Z1*theta[2])*Z1
-  m1 <- (Y - plogis(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))
-  m2 <- (Y - plogis(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*X
-  m3 <- (Y - plogis(theta[3] + X*theta[4] + theta[5]*(X - theta[1] - Z1*theta[2])))*res
+  a1 <- (X - theta[1] - Z1 * theta[2])
+  a2 <- (X - theta[1] - Z1 * theta[2]) * Z1
+  m1 <- (Y - plogis(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2])))
+  m2 <- (Y - plogis(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * X
+  m3 <- (Y - plogis(theta[3] + X * theta[4] + theta[5] * (X - theta[1] - Z1 * theta[2]))) * res
   return(cbind(a1, a2, m1, m2, m3))
 }
 
@@ -751,13 +770,13 @@ tsrigmmlogit <- gmm(tsriLogitMoments, x = dat, t0 = c(coef(stage1), coef(stage2)
 summary(tsrigmmlogit)
 
 # causal odds ratio
-exp(cbind(coef(tsrigmmlogit), confint(tsrigmmlogit)$test)[3:5,])
+exp(cbind(coef(tsrigmmlogit), confint(tsrigmmlogit)$test)[3:5, ])
 ```
 
-#### G-estimation
+##### G-estimation
 ```{r}
 fitZ.L <- glm(Z ~ 1, data = dat)
-fitY.LZX <- glm(Y ~ X + Z + X*Z, family = "binomial", data = dat)
+fitY.LZX <- glm(Y ~ X + Z + X * Z, family = "binomial", data = dat)
 fitLogisticGest <-
   ivglm(
     estmethod = "g",
