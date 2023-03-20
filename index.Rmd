@@ -17,6 +17,10 @@ output:
 
 ```{r include=FALSE}
 require("Hmisc")
+knitr::opts_chunk$set(
+  fig.align = "center",
+  collapse = TRUE
+)
 ```
 `r Hmisc::hidingTOC(levels = 4)`
 
